@@ -6,7 +6,10 @@
 
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/bt.h>
+#include "zmk-helpers/helper.h"
 #include <behaviors.dtsi>
+#include "includes/behaviors_homerow_mods.dtsi"
+
 
 // LAYERS
 #define DEFAULT 0
@@ -14,15 +17,7 @@
 #define SYM     2
 #define FUNC    3
 
-&mt {
-  tapping-term-ms = <180>;
-  flavor = "tap-preferred";
-};
-
-/ {
-  behaviors {
-  };
-
+/{
   keymap {
     compatible = "zmk,keymap";
 
@@ -31,7 +26,7 @@
 
 &none   /**/  &kp Q           &kp W       &kp E       &kp R           &kp T   /**/  &kp Y    &kp U           &kp I       &kp O       &kp P          /**/  &none
 &none   /**/  &kp A           &kp S       &kp D       &kp F           &kp G   /**/  &kp H    &kp J           &kp K       &kp L       &kp SEMI       /**/  &none
-&none   /**/  &mt LGUI Z      &mt LALT X  &mt LCTRL C &mt LSHIFT V    &kp B   /**/  &kp N    &mt RSHIFT M    &mt RCTRL COMMA &mt RALT DOT  &mt RGUI FSLH/**/  &none
+&none   /**/  &hml LGUI Z      &hml LALT X  &hml LCTRL C &hml LSHIFT V    &kp B   /**/  &kp N    &hmr RSHIFT M    &hmr RCTRL COMMA &hmr RALT DOT  &hmr RGUI FSLH/**/  &none
               &lt NUM ESC &kp TAB &kp SPACE  /**/  &lt FUNC RET &kp BSPC &lt SYM GRAVE
 
       >;
