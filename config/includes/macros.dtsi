@@ -1,0 +1,11 @@
+/ {
+  macros {
+    tmux_leader: tmux_leader{
+      label = "ZM_tmux_leader";
+      compatible = "zmk,behavior-macro";
+      wait-ms = <40>;
+      tap-ms = <40>;`
+      #binding-cells = <0>;
+      bindings = <&macro_tap &kp LCTL &kp SPACE>;
+    };
+  };

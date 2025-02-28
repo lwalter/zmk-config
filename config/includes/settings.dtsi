@@ -1,0 +1,9 @@
+//&mt {
+//  tapping-term-ms = <180>;
+//  flavor = "tap-preferred";
+//};
+
+&lt {
+  tapping-term-ms = <85>;
+  flavor = "tap-preferred";
+};
