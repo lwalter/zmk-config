@@ -26,7 +26,7 @@
 
 &none   /**/  &kp Q           &kp W       &kp E       &kp R           &kp T   /**/  &kp Y    &kp U           &kp I       &kp O       &kp P          /**/  &none
 &none   /**/  &kp A           &kp S       &kp D       &kp F           &kp G   /**/  &kp H    &kp J           &kp K       &kp L       &kp SEMI       /**/  &none
-&none   /**/  &hml LGUI Z      &hml LALT X  &hml LCTRL C &hml LSHIFT V    &kp B   /**/  &kp N    &hmr RSHIFT M    &hmr RCTRL COMMA &hmr RALT DOT  &hmr RGUI FSLH/**/  &none
+&none   /**/  &hml LGUI Z      &hml LALT X  &hml_s LCTRL C &hml_s LSHIFT V    &kp B   /**/  &kp N    &hmr_s RSHIFT M    &hmr_s RCTRL COMMA &hmr RALT DOT  &hmr RGUI FSLH/**/  &none
               &lt NUM ESC &kp TAB &kp SPACE  /**/  &lt FUNC RET &kp BSPC &lt SYM GRAVE
 
       >;
@@ -35,8 +35,8 @@
     num_layer {
       bindings = <
 &none   /**/  &trans &kp KP_N7 &kp KP_N8 &kp KP_N9 &trans    /**/  &kp HOME &kp PG_DN  &kp PG_UP &kp END   &trans     /**/  &none
-&none   /**/  &trans &kp KP_N4 &kp KP_N5 &kp KP_N6 &trans    /**/  &kp LEFT &kp DOWN   &kp UP    &kp RIGHT &kp SLASH  /**/  &none
-&none   /**/  &trans &kp KP_N1 &kp KP_N2 &kp KP_N3 &kp KP_N0 /**/  &trans   &caps_word &kp CAPS  &trans    &trans     /**/  &none
+&none   /**/  &trans &kp KP_N4 &kp KP_N5 &kp KP_N6 &trans    /**/  &kp LEFT &kp DOWN   &kp UP    &kp RIGHT &trans     /**/  &none
+&none   /**/  &trans &kp KP_N1 &kp KP_N2 &kp KP_N3 &kp KP_N0 /**/  &trans   &caps_word &kp CAPS  &trans    &kp BSLH   /**/  &none
               &trans &trans &trans                           /**/  &trans   &trans        &trans
       >;
     };
