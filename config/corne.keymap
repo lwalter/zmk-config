@@ -1,116 +1,125 @@
 /*
- * ZMK Keymap for Corne (36-key variant, 3x5+3 per side)
- * Layout logic from: lwalter's QMK Moonlander config
- * https://github.com/qmk/qmk_firmware/blob/c34493050911f197b7b26839c2633fadf4505a07/keyboards/moonlander/keymaps/lwalter/keymap.c
+ * Copyright (c) 2020 The ZMK Contributors
+ * SPDX-License-Identifier: MIT
  *
- * Key position matrix (0-indexed):
+ * Corne 36-key keymap
+ * Layout structure from: https://github.com/lwalter/zmk-config/blob/main/config/corne.keymap
+ * Behavior internals translated from: https://github.com/qmk/qmk_firmware/blob/c34493050911f197b7b26839c2633fadf4505a07/keyboards/moonlander/keymaps/lwalter/keymap.c
  *
- * LEFT HALF
- *  Row 0:  0  1  2  3  4
- *  Row 1:  5  6  7  8  9
- *  Row 2: 10 11 12 13 14
- *  Thumb:          15 16 17
- *
- * RIGHT HALF
- *  Row 0: 18 19 20 21 22
- *  Row 1: 23 24 25 26 27
- *  Row 2: 28 29 30 31 32
- *  Thumb: 33 34 35
- *
- * Left HRM keys (bottom row: GUI/ALT/CTL/SFT on Z/X/C/V): 10 11 12 13
- * Right HRM keys (bottom row: SFT/CTL/ALT/GUI on M/,/./slash): 28 29 30 31
- *
- * ── QMK → ZMK translation (unchanged from Moonlander version) ────────────────
- *
- * TAPPING_TERM 170ms          → tapping-term-ms = <170> (lt_std)
- * TAPPING_TERM_PER_KEY 85ms   → tapping-term-ms = <85>  (lt_fast, for ESC and SYM thumb)
+ * ── QMK → ZMK translation ────────────────────────────────────────────────────
+ * TAPPING_TERM 170ms          → tapping-term-ms = <170> (lt_std / layer taps)
+ * TAPPING_TERM_PER_KEY 85ms   → tapping-term-ms = <85>  (lt_fast, thumb layer keys)
  * PERMISSIVE_HOLD             → flavor = "balanced"
  * Achordion bilateral rule    → hold-trigger-key-positions (opposite hand only)
- * achordion_timeout = 800ms   → tapping-term-ms = <800> on hrm_l / hrm_r
- * achordion_timeout = 0       → lt_fast (no bilateral restriction, thumb keys)
+ * achordion_timeout = 800ms   → tapping-term-ms = <800> on hm_l / hm_r
+ * achordion_timeout = 0       → lt_fast (no bilateral restriction on thumb keys)
  * Achordion streak timeout    → require-prior-idle-ms = <100>
- * Custom keycodes             → ZMK macros (<=, >=, :=)
- * DANCE_0 tap/hold            → lt_fast SYM LC(SPACE)
+ * Custom keycodes LT_EQ/GT_EQ/WALRUS → ZMK macros
+ * DANCE_0 (tap=Ctrl+Space, hold=SYM) → lt_fast SYM LC(SPACE)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/bt.h>
-#include <dt-bindings/zmk/outputs.h>
+#include "zmk-helpers/helper.h"
+#include "zmk-helpers/key-labels/36.h"
 
-#define BASE   0
-#define NAVNUM 1
-#define SYM    2
-#define FN     3
+/* Named key-position sets from zmk-helpers (used in hold-trigger-key-positions) */
+#define KEYS_L LT0 LT1 LT2 LT3 LT4 LM0 LM1 LM2 LM3 LM4 LB0 LB1 LB2 LB3 LB4
+#define KEYS_R RT0 RT1 RT2 RT3 RT4 RM0 RM1 RM2 RM3 RM4 RB0 RB1 RB2 RB3 RB4
+#define THUMBS LH2 LH1 LH0 RH0 RH1 RH2
 
-/* All left-hand positions including left thumb cluster */
-#define LHAND  0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17
-
-/* All right-hand positions including right thumb cluster */
-#define RHAND  18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+/* Layer indices */
+#define DEFAULT 0
+#define NUM     1
+#define SYM     2
+#define FUNC    3
 
 / {
+    /* ── Macros ──────────────────────────────────────────────────────────── */
     macros {
         lt_eq: lt_eq {
-            label = "LESS_THAN_OR_EQ";
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
             bindings = <&kp LT &kp EQUAL>;
         };
 
         gt_eq: gt_eq {
-            label = "GREATER_THAN_OR_EQ";
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
             bindings = <&kp GT &kp EQUAL>;
         };
 
         walrus: walrus {
-            label = "WALRUS_OP";
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
             bindings = <&kp COLON &kp EQUAL>;
         };
     };
 
+    /* ── Behaviors ───────────────────────────────────────────────────────── */
     behaviors {
-        hrm_l: hrm_left {
+
+        /*
+         * hm_l / hm_r — Home-row mods (bottom row: Z/X/C/V and M/,/./slash)
+         *
+         * achordion_timeout = 800ms → tapping-term-ms = <800>
+         * PERMISSIVE_HOLD           → flavor = "balanced"
+         * Achordion bilateral rule  → hold-trigger-key-positions = opposite hand
+         * Achordion streak timeout  → require-prior-idle-ms = <100>
+         * hold-trigger-on-release   → matches Achordion's event-plumbing
+         *
+         * Thumbs are included in both sets so mod+thumb combos work
+         * (mirrors the achordion_chord exception for thumb keys).
+         */
+        hm_l: hm_left {
             compatible = "zmk,behavior-hold-tap";
-            label = "HRM_LEFT";
             #binding-cells = <2>;
             tapping-term-ms = <800>;
             flavor = "balanced";
             require-prior-idle-ms = <100>;
-            hold-trigger-key-positions = <RHAND>;
+            hold-trigger-key-positions = <KEYS_R THUMBS>;
             hold-trigger-on-release;
             bindings = <&kp>, <&kp>;
         };
 
-        hrm_r: hrm_right {
+        hm_r: hm_right {
             compatible = "zmk,behavior-hold-tap";
-            label = "HRM_RIGHT";
             #binding-cells = <2>;
             tapping-term-ms = <800>;
             flavor = "balanced";
             require-prior-idle-ms = <100>;
-            hold-trigger-key-positions = <LHAND>;
+            hold-trigger-key-positions = <KEYS_L THUMBS>;
             hold-trigger-on-release;
             bindings = <&kp>, <&kp>;
         };
 
-        lt_std: layer_tap_std {
+        /*
+         * lt_std — Layer-tap at standard tapping term (170ms)
+         * Used for &lt FUNC RET (not in Achordion's timeout=0 list).
+         * PERMISSIVE_HOLD → flavor = "balanced"
+         */
+        lt_std: lt_std {
             compatible = "zmk,behavior-hold-tap";
-            label = "LT_STD";
             #binding-cells = <2>;
             tapping-term-ms = <170>;
             flavor = "balanced";
             bindings = <&mo>, <&kp>;
         };
 
-        lt_fast: layer_tap_fast {
+        /*
+         * lt_fast — Layer-tap at fast tapping term (85ms), no bilateral rule.
+         *
+         * achordion_timeout = 0 in QMK for LT(NUM, ESC) and DANCE_0:
+         * these thumb keys bypass Achordion entirely and settle immediately.
+         * TAPPING_TERM_PER_KEY gives them 85ms.
+         *
+         * DANCE_0: single-tap = Ctrl+Space, hold = SYM layer.
+         * → &lt_fast SYM LC(SPACE)
+         */
+        lt_fast: lt_fast {
             compatible = "zmk,behavior-hold-tap";
-            label = "LT_FAST";
             #binding-cells = <2>;
             tapping-term-ms = <85>;
             flavor = "balanced";
@@ -118,76 +127,100 @@
         };
     };
 
+    /* ── Keymap ──────────────────────────────────────────────────────────── */
     keymap {
         compatible = "zmk,keymap";
 
-        /* ── Layer 0: BASE ───────────────────────────────────────────
-         *
+        /*
+         * DEFAULT
          * ┌─────┬─────┬─────┬─────┬─────┐   ┌─────┬─────┬─────┬─────┬─────┐
          * │  Q  │  W  │  E  │  R  │  T  │   │  Y  │  U  │  I  │  O  │  P  │
          * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
          * │  A  │  S  │  D  │  F  │  G  │   │  H  │  J  │  K  │  L  │  ;  │
          * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
          * │GUI/Z│ALT/X│CTL/C│SFT/V│  B  │   │  N  │SFT/M│CTL/,│ALT/.│GUI//│
-         * └─────┴─────┴─────┼─────┼─────┼───┼─────┼─────┼─────┼─────┴─────┘
-         *                   │ SPC │ TAB │   │     │LT3/ │BSPC │
-         *                   │     │     │   │LT1/ │ ENT │     │
-         *                   │     │LT2/ │   │ ESC │     │     │
-         *                   │     │C+SPC│   │     │     │     │
-         *                   └─────┴─────┘   └─────┴─────┴─────┘
+         * └─────┴─────┴─┬───┴──┬──┴──┬──┘   └──┬──┴──┬──┴──┬──┴─────┴─────┘
+         *               │NUM/  │ TAB │SPC│   │FUNC/ │BSPC │SYM/  │
+         *               │ ESC  │     │   │   │ RET  │     │GRAVE │
+         *               └──────┴─────┴───┘   └──────┴─────┴──────┘
          *
-         * Thumb mapping:
-         *   Left:  SPC  |  TAB  |  lt_fast(SYM, Ctrl+Space)
-         *   Right: lt_fast(NAVNUM, ESC)  |  lt_std(FN, ENT)  |  BSPC
+         * Left thumbs:  &lt_fast NUM ESC | &kp TAB | &kp SPACE
+         * Right thumbs: &lt_std FUNC RET | &kp BSPC | &lt_fast SYM LC(SPACE)
+         *
+         * Note: SYM thumb replicates DANCE_0 (tap=Ctrl+Space, hold=SYM).
+         * GRAVE is moved to the SYM layer; the outer &none guards match
+         * the original file's 42-key padding style.
          */
-        base_layer {
-            label = "BASE";
-            bindings = 
-/* Row 0 */ &kp Q          &kp W          &kp E          &kp R          &kp T            &kp Y   &kp U          &kp I          &kp O          &kp P
-/* Row 1 */ &kp A          &kp S          &kp D          &kp F          &kp G            &kp H   &kp J          &kp K          &kp L          &kp SEMI
-/* Row 2 */ &hrm_l LGUI Z  &hrm_l LALT X  &hrm_l LCTRL C &hrm_l LSHFT V &kp B            &kp N   &hrm_r LSHFT M &hrm_r LCTRL COMMA &hrm_r LALT DOT &hrm_r LGUI FSLH
-/* Thumbs */                                              &kp SPC        &kp TAB          &lt_fast SYM LC(SPACE)  &lt_fast NAVNUM ESC  &lt_std FN RET  &kp BSPC
+        default_layer {
+            bindings = <
+&none  &kp Q          &kp W          &kp E            &kp R           &kp T      &kp Y   &kp U           &kp I              &kp O           &kp P            &none
+&none  &kp A          &kp S          &kp D            &kp F           &kp G      &kp H   &kp J           &kp K              &kp L           &kp SEMI         &none
+&none  &hm_l LGUI Z   &hm_l LALT X   &hm_l LCTRL C    &hm_l LSHFT V   &kp B      &kp N   &hm_r RSHFT M   &hm_r RCTRL COMMA  &hm_r RALT DOT  &hm_r RGUI FSLH  &none
+                                     &lt_fast NUM ESC  &kp TAB         &kp SPACE  &lt_std FUNC RET  &kp BSPC  &lt_fast SYM LC(SPACE)
             >;
         };
 
-        /* ── Layer 1: NAVNUM ─────────────────────────────────────────
-         *
+        /*
+         * NUM — numbers (numpad layout) + navigation
          * ┌─────┬─────┬─────┬─────┬─────┐   ┌─────┬─────┬─────┬─────┬─────┐
          * │     │  7  │  8  │  9  │     │   │HOME │PGDN │PGUP │ END │     │
          * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
-         * │     │  4  │  5  │  6  │     │   │ ←   │  ↓  │  ↑  │  →  │     │
+         * │     │  4  │  5  │  6  │     │   │  ←  │  ↓  │  ↑  │  →  │  /  │
          * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
          * │     │  1  │  2  │  3  │  0  │   │     │CAPW │CAPS │     │     │
-         * └─────┴─────┴─────┼─────┼─────┼───┼─────┼─────┼─────┼─────┴─────┘
-         *                   │     │     │   │     │     │     │
-         *                   └─────┴─────┘   └─────┴─────┴─────┘
+         * └─────┴─────┴─┬───┴──┬──┴──┬──┘   └──┬──┴──┬──┴──┬──┴─────┴─────┘
+         *               │     │     │     │   │     │     │     │
+         *               └─────┴─────┴─────┘   └─────┴─────┴─────┘
          */
-        navnum_layer {
-            label = "NAVNUM";
-            bindings = 
-/* Row 0 */ &trans  &kp N7  &kp N8  &kp N9  &trans       &kp HOME  &kp PG_DN  &kp PG_UP  &kp END    &trans
-/* Row 1 */ &trans  &kp N4  &kp N5  &kp N6  &trans       &kp LEFT  &kp DOWN   &kp UP     &kp RIGHT  &trans
-/* Row 2 */ &trans  &kp N1  &kp N2  &kp N3  &kp N0       &trans    &caps_word &kp CAPS   &trans     &trans
-/* Thumbs */                         &trans  &trans       &trans    &trans     &trans     &trans
+        num_layer {
+            bindings = <
+&none  &trans  &kp KP_N7  &kp KP_N8  &kp KP_N9  &trans      &kp HOME  &kp PG_DN   &kp PG_UP  &kp END    &trans      &none
+&none  &trans  &kp KP_N4  &kp KP_N5  &kp KP_N6  &trans      &kp LEFT  &kp DOWN    &kp UP     &kp RIGHT  &kp SLASH   &none
+&none  &trans  &kp KP_N1  &kp KP_N2  &kp KP_N3  &kp KP_N0   &trans    &caps_word  &kp CAPS   &trans     &trans      &none
+                           &trans     &trans      &trans      &trans    &trans      &trans
             >;
         };
 
-        /* ── Layer 2: SYM ────────────────────────────────────────────
-         *
+        /*
+         * SYM — symbols
          * ┌─────┬─────┬─────┬─────┬─────┐   ┌─────┬─────┬─────┬─────┬─────┐
          * │  !  │  @  │  #  │  $  │  %  │   │  +  │  =  │  [  │  ]  │  |  │
          * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
          * │  ^  │  &  │  *  │  "  │ :=  │   │  -  │  _  │  (  │  )  │  '  │
          * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
          * │  `  │  ~  │     │     │     │   │ <=  │ >=  │  {  │  }  │  \  │
-         * └─────┴─────┴─────┼─────┼─────┼───┼─────┼─────┼─────┼─────┴─────┘
-         *                   │     │     │   │     │     │     │
-         *                   └─────┴─────┘   └─────┴─────┴─────┘
+         * └─────┴─────┴─┬───┴──┬──┴──┬──┘   └──┬──┴──┬──┴──┬──┴─────┴─────┘
+         *               │     │     │     │   │     │     │     │
+         *               └─────┴─────┴─────┘   └─────┴─────┴─────┘
          */
         sym_layer {
-            label = "SYM";
-            bindings = 
-/* Row 0 */ &kp EXCL   &kp AT     &kp HASH   &kp DLLR   &kp PRCNT    &kp PLUS   &kp EQUAL  &kp LBKT   &kp RBKT   &kp PIPE
-/* Row 1 */ &kp CARET  &kp AMPS   &kp STAR   &kp DQT    &walrus      &kp MINUS  &kp UNDER  &kp LPAR   &kp RPAR   &kp SQT
-/* Row 2 */ &kp GRAVE  &kp TILDE  &trans     &trans     &trans       &lt_eq     &gt_eq     &kp LBRC   &kp RBRC   &kp BSLH
-/*
+            bindings = <
+&none  &kp EXCL   &kp AT    &kp HASH  &kp DLLR  &kp PRCNT   &kp PLUS   &kp EQUAL  &kp LBKT  &kp RBKT  &kp PIPE   &none
+&none  &kp CARET  &kp AMPS  &kp STAR  &kp DQT   &walrus     &kp MINUS  &kp UNDER  &kp LPAR  &kp RPAR  &kp SQT    &none
+&none  &kp GRAVE  &kp TILDE &trans    &trans    &trans      &lt_eq     &gt_eq     &kp LBRC  &kp RBRC  &kp BSLH   &none
+                             &trans   &trans    &trans      &trans     &trans     &trans
+            >;
+        };
+
+        /*
+         * FUNC — F-keys (numpad layout)
+         * ┌─────┬─────┬─────┬─────┬─────┐   ┌─────┬─────┬─────┬─────┬─────┐
+         * │     │ F7  │ F8  │ F9  │ F12 │   │     │     │     │     │     │
+         * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
+         * │     │ F4  │ F5  │ F6  │ F11 │   │     │     │     │     │     │
+         * ├─────┼─────┼─────┼─────┼─────┤   ├─────┼─────┼─────┼─────┼─────┤
+         * │     │ F1  │ F2  │ F3  │ F10 │   │     │     │     │     │     │
+         * └─────┴─────┴─┬───┴──┬──┴──┬──┘   └──┬──┴──┬──┴──┬──┴─────┴─────┘
+         *               │     │     │     │   │     │     │     │
+         *               └─────┴─────┴─────┘   └─────┴─────┴─────┘
+         */
+        func_layer {
+            bindings = <
+&none  &trans  &kp F7  &kp F8  &kp F9  &kp F12   &trans  &trans  &trans  &trans  &trans  &none
+&none  &trans  &kp F4  &kp F5  &kp F6  &kp F11   &trans  &trans  &trans  &trans  &trans  &none
+&none  &trans  &kp F1  &kp F2  &kp F3  &kp F10   &trans  &trans  &trans  &trans  &trans  &none
+                        &trans  &trans  &trans    &trans  &trans  &trans
+            >;
+        };
+    };
+};
